@@ -9,9 +9,7 @@ const curve = require('./curve');
 const errors = require('./errors');
 const queueJob = require('./queue_job');
 
-
 class SessionBuilder {
-
     constructor(storage, protocolAddress) {
         this.addr = protocolAddress;
         this.storage = storage;
@@ -23,13 +21,10 @@ class SessionBuilder {
             if (!await this.storage.isTrustedIdentity(this.addr.id, device.identityKey)) {
                 throw new errors.UntrustedIdentityKeyError(this.addr.id, device.identityKey);
             }
-            curve.verifySignature(device.identityKey, device.signedPreKey.publicKey,
-                                  device.signedPreKey.signature, true);
+            curve.verifySignature(device.identityKey, device.signedPreKey.publicKey, device.signedPreKey.signature, true);
             const baseKey = curve.generateKeyPair();
             const devicePreKey = device.preKey && device.preKey.publicKey;
-            const session = await this.initSession(true, baseKey, undefined, device.identityKey,
-                                                   devicePreKey, device.signedPreKey.publicKey,
-                                                   device.registrationId);
+            const session = await this.initSession(true, baseKey, undefined, device.identityKey, devicePreKey, device.signedPreKey.publicKey, device.registrationId);
             session.pendingPreKey = {
                 signedKeyId: device.signedPreKey.keyId,
                 baseKey: baseKey.pubKey
@@ -43,7 +38,7 @@ class SessionBuilder {
             } else {
                 const openSession = record.getOpenSession();
                 if (openSession) {
-                    console.warn("Closing stale open session for new outgoing prekey bundle");
+                    //console.warn("Closing stale open session for new outgoing prekey bundle");
                     record.closeSession(openSession);
                 }
             }
@@ -71,17 +66,14 @@ class SessionBuilder {
         }   
         const existingOpenSession = record.getOpenSession();
         if (existingOpenSession) {
-            console.warn("Closing open session in favor of incoming prekey bundle");
+            //console.warn("Closing open session in favor of incoming prekey bundle");
             record.closeSession(existingOpenSession);
         }
-        record.setSession(await this.initSession(false, preKeyPair, signedPreKeyPair,
-                                                 message.identityKey, message.baseKey,
-                                                 undefined, message.registrationId));
+        record.setSession(await this.initSession(false, preKeyPair, signedPreKeyPair, message.identityKey, message.baseKey, undefined, message.registrationId));
         return message.preKeyId;
     }
 
-    async initSession(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey,
-                      theirEphemeralPubKey, theirSignedPubKey, registrationId) {
+    async initSession(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey, theirEphemeralPubKey, theirSignedPubKey, registrationId) {
         if (isInitiator) {
             if (ourSignedKey) {
                 throw new Error("Invalid call to initSession");
@@ -118,8 +110,7 @@ class SessionBuilder {
             const a4 = curve.calculateAgreement(theirEphemeralPubKey, ourEphemeralKey.privKey);
             sharedSecret.set(new Uint8Array(a4), 32 * 4);
         }
-        const masterKey = crypto.deriveSecrets(Buffer.from(sharedSecret), Buffer.alloc(32),
-                                               Buffer.from("WhisperText"));
+        const masterKey = crypto.deriveSecrets(Buffer.from(sharedSecret), Buffer.alloc(32), Buffer.from("WhisperText"));
         const session = SessionRecord.createEntry();
         session.registrationId = registrationId;
         session.currentRatchet = {
